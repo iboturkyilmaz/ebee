@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run prebuild-install",
+            "runtimeExecutable": "prebuild-install",
+            "cwd": "${workspaceFolder}",
+            "args": []
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "🚀 eBee Sunucusunu Başlat",
+            "program": "${workspaceFolder}/server.js",
+            "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        }
+    ]
+}

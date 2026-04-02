@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="eBee - Aylık gelir ve gider takibi, fatura yönetimi ve finansal raporlama">
+    <title>eBee - Gelir Gider Takip</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+    <nav id="navbar" class="navbar">
+        <div class="navbar-brand" style="display:flex; align-items:center; gap: 12px;">
+            <div style="display:flex; align-items:center;">
+                <span class="navbar-logo">🐝</span>
+                <span class="navbar-title">eBee</span>
+            </div>
+            <select id="workspace-selector" class="form-select" style="padding: 4px 8px; font-size: 13px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: auto; min-width: 120px;"></select>
+        </div>
+        <div class="navbar-links" id="navbar-links">
+            <a href="#/" class="nav-link active" data-page="dashboard" id="nav-dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="#/add" class="nav-link" data-page="add" id="nav-add">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                <span>İşlem Ekle</span>
+            </a>
+            <a href="#/transactions" class="nav-link" data-page="transactions" id="nav-transactions">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>İşlemler</span>
+            </a>
+            <a href="#/documents" class="nav-link" data-page="documents" id="nav-documents">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Dökümanlar</span>
+            </a>
+            <a href="#/workspaces" class="nav-link" data-page="workspaces" id="nav-workspaces">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <span>Tablolar</span>
+            </a>
+        </div>
+        <button class="navbar-mobile-toggle" id="mobile-toggle" aria-label="Menü">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+    </nav>
+
+    <main id="app" class="app-container"></main>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title"></h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+    // =============================================
+    //  CATEGORIES
+    // =============================================
+    const INCOME_CATEGORIES = [
+        { id: 'salary', name: 'Maaş', icon: '💰' },
+        { id: 'freelance', name: 'Freelance', icon: '💻' },
+        { id: 'investment', name: 'Yatırım', icon: '📈' },
+        { id: 'rental', name: 'Kira Geliri', icon: '🏠' },
+        { id: 'gift', name: 'Hediye', icon: '🎁' },
+        { id: 'other_income', name: 'Diğer', icon: '💵' },
+    ];
+
+    const EXPENSE_CATEGORIES = [
+        { id: 'rent', name: 'Kira', icon: '🏡' },
+        { id: 'bills', name: 'Faturalar', icon: '📄' },
+        { id: 'grocery', name: 'Market', icon: '🛒' },
+        { id: 'transport', name: 'Ulaşım', icon: '🚗' },
+        { id: 'health', name: 'Sağlık', icon: '🏥' },
+        { id: 'education', name: 'Eğitim', icon: '📚' },
+        { id: 'entertainment', name: 'Eğlence', icon: '🎬' },
+        { id: 'clothing', name: 'Giyim', icon: '👕' },
+        { id: 'food', name: 'Yemek', icon: '🍽️' },
+        { id: 'tech', name: 'Teknoloji', icon: '📱' },
+        { id: 'other_expense', name: 'Diğer', icon: '📦' },
+    ];
+
+    function getCategoryById(id) {
+        const all = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
+        return all.find(c => c.id === id) || { id: 'unknown', name: 'Bilinmiyor', icon: '❓' };
+    }
+
+    function getCategoriesByType(type) {
+        return type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    }
+
+    // =============================================
+    //  FORMATTERS
+    // =============================================
+    const MONTHS_TR = [
+        'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('tr-TR', {
+            style: 'currency', currency: 'TRY', minimumFractionDigits: 2,
+        }).format(amount);
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.getDate() + ' ' + MONTHS_TR[date.getMonth()] + ' ' + date.getFullYear();
+    }
+
+    function getMonthYear(date) {
+        return MONTHS_TR[date.getMonth()] + ' ' + date.getFullYear();
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    function getTodayString() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+
+    // =============================================
+    //  STORE (Backend API)
+    // =============================================
+    let workspacesData = [];
+    let transactionsData = [];
+    let documentsData = [];
+    let activeWorkspaceId = localStorage.getItem('ebee_active_workspace') || 'default';
+
+    async function setWorkspace(id) {
+        if (id === 'NEW_WORKSPACE_ACTION') {
+            window.location.hash = '#/workspaces';
+            document.getElementById('workspace-selector').value = activeWorkspaceId;
+            return;
+        }
+        activeWorkspaceId = id;
+        localStorage.setItem('ebee_active_workspace', id);
+        await loadFromServer();
+        navigate(window.location.hash || '#/');
+    }
+
+    function renderWorkspaceMenu() {
+        const sel = document.getElementById('workspace-selector');
+        if (!sel) return;
+        sel.innerHTML = workspacesData.map(w => `<option value="${w.id}" ${w.id === activeWorkspaceId ? 'selected' : ''}>💼 ${w.name}</option>`).join('');
+        sel.innerHTML += '<option disabled>──────────</option><option value="NEW_WORKSPACE_ACTION">➕ Yeni Tablo Ekle...</option>';
+        
+        sel.onchange = function(e) {
+            setWorkspace(e.target.value);
+        };
+    }
+
+    async function loadFromServer() {
+        try {
+            const wRes = await fetch('http://localhost:3000/api/workspaces');
+            if (wRes.ok) workspacesData = await wRes.json();
+            
+            const txRes = await fetch('http://localhost:3000/api/transactions?workspaceId=' + activeWorkspaceId);
+            if (txRes.ok) transactionsData = await txRes.json();
+            
+            const docRes = await fetch('http://localhost:3000/api/documents');
+            if (docRes.ok) documentsData = await docRes.json();
+
+            renderWorkspaceMenu();
+        } catch (e) {
+            console.error('Veritabanına bağlanılamadı:', e);
+            var container = document.getElementById('toast-container');
+            if (container) {
+                container.innerHTML += '<div class="toast error"><span>❌</span><span>Sunucuya bağlanılamadı. Önce Node.js başlatın.</span></div>';
+            }
+        }
+    }
+
+    function getAllTransactions() { return transactionsData; }
+
+    function addTransaction(tx) {
+        const newTx = { id: generateId(), ...tx, createdAt: new Date().toISOString(), workspaceId: activeWorkspaceId };
+        transactionsData.unshift(newTx);
+        fetch('http://localhost:3000/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTx)
+        }).catch(e => console.error(e));
+        return newTx;
+    }
+
+    function updateTransaction(id, updates) {
+        const idx = transactionsData.findIndex(t => t.id === id);
+        if (idx !== -1) { 
+            transactionsData[idx] = { ...transactionsData[idx], ...updates }; 
+            fetch('http://localhost:3000/api/transactions/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(transactionsData[idx])
+            }).catch(e => console.error(e));
+            return transactionsData[idx]; 
+        }
+        return null;
+    }
+
+    function deleteTransaction(id) {
+        transactionsData = transactionsData.filter(t => t.id !== id);
+        documentsData = documentsData.filter(d => d.transactionId !== id);
+        fetch('http://localhost:3000/api/transactions/' + id, { method: 'DELETE' }).catch(e => console.error(e));
+    }
+
+    function getTransactionsByMonth(year, month) {
+        return transactionsData.filter(t => {
+            if (!t.date) return false;
+            const d = new Date(t.date); return d.getFullYear() === year && d.getMonth() === month;
+        });
+    }
+
+    function getMonthlyTotals(year, month) {
+        const txs = getTransactionsByMonth(year, month).filter(t => t.status !== 'planned');
+        let income = 0, expense = 0;
+        txs.forEach(t => { const a = parseFloat(t.amount) || 0; if (t.type === 'income') income += a; else expense += a; });
+        return { income, expense, balance: income - expense };
+    }
+
+    function getExpensesByCategory(year, month) {
+        const map = {};
+        getTransactionsByMonth(year, month).filter(t => t.type === 'expense' && t.status !== 'planned').forEach(t => {
+            if (!map[t.category]) map[t.category] = 0; map[t.category] += parseFloat(t.amount) || 0;
+        });
+        return map;
+    }
+
+    function getMonthlyTrend(year) {
+        const data = [];
+        for (let m = 0; m < 12; m++) data.push(getMonthlyTotals(year, m));
+        return data;
+    }
+
+    // Documents
+    function getAllDocuments() { return documentsData; }
+
+    function addDocument(doc) {
+        const newDoc = { id: generateId(), ...doc, uploadedAt: new Date().toISOString() };
+        documentsData.unshift(newDoc);
+        fetch('http://localhost:3000/api/documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newDoc)
+        }).catch(e => console.error(e));
+        return newDoc;
+    }
+
+    function deleteDocument(id) { 
+        documentsData = documentsData.filter(d => d.id !== id); 
+        fetch('http://localhost:3000/api/documents/' + id, { method: 'DELETE' }).catch(e => console.error(e));
+    }
+
+    function getDocumentByTransactionId(txId) { return documentsData.find(d => d.transactionId === txId) || null; }
+    function getDocumentById(id) { return documentsData.find(d => d.id === id) || null; }
+
+    // Demo Data
+    async function seedDemoData() {
+        if (transactionsData.length > 0 || activeWorkspaceId !== 'default') return;
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth();
+        const ms = String(m + 1).padStart(2, '0');
+        const pm = m === 0 ? 11 : m - 1;
+        const py = m === 0 ? y - 1 : y;
+        const pms = String(pm + 1).padStart(2, '0');
+
+        const demo = [
+            { type:'income', category:'salary', amount:45000, description:'Aylık maaş', date: y+'-'+ms+'-01' },
+            { type:'income', category:'freelance', amount:8500, description:'Web site projesi', date: y+'-'+ms+'-05' },
+            { type:'expense', category:'rent', amount:12000, description:'Ev kirası', date: y+'-'+ms+'-01' },
+            { type:'expense', category:'bills', amount:1850, description:'Elektrik faturası', date: y+'-'+ms+'-10' },
+            { type:'expense', category:'bills', amount:320, description:'İnternet faturası', date: y+'-'+ms+'-08' },
+            { type:'expense', category:'grocery', amount:4200, description:'Haftalık market alışverişi', date: y+'-'+ms+'-07' },
+            { type:'expense', category:'transport', amount:1100, description:'Akbil yükleme', date: y+'-'+ms+'-03' },
+            { type:'expense', category:'food', amount:750, description:'Dışarıda yemek', date: y+'-'+ms+'-12' },
+            { type:'expense', category:'entertainment', amount:350, description:'Netflix + Spotify', date: y+'-'+ms+'-01' },
+            { type:'income', category:'investment', amount:2200, description:'Borsa getirisi', date: y+'-'+ms+'-15' },
+            { type:'expense', category:'health', amount:600, description:'Eczane', date: y+'-'+ms+'-09' },
+            { type:'expense', category:'clothing', amount:2800, description:'Kışlık kıyafet', date: y+'-'+ms+'-14' },
+            // Previous month
+            { type:'income', category:'salary', amount:42000, description:'Aylık maaş', date: py+'-'+pms+'-01' },
+            { type:'income', category:'freelance', amount:5000, description:'Logo tasarımı', date: py+'-'+pms+'-12' },
+            { type:'expense', category:'rent', amount:12000, description:'Ev kirası', date: py+'-'+pms+'-01' },
+            { type:'expense', category:'bills', amount:2100, description:'Doğalgaz faturası', date: py+'-'+pms+'-10' },
+            { type:'expense', category:'grocery', amount:3800, description:'Market alışverişi', date: py+'-'+pms+'-06' },
+            { type:'expense', category:'tech', amount:15000, description:'Yeni telefon', date: py+'-'+pms+'-20' },
+        ];
+        demo.forEach(t => addTransaction(t));
+    }
+
+    // =============================================
+    //  APP STATE
+    // =============================================
+    let currentDate = new Date();
+    let chartInstances = {};
+
+    // =============================================
+    //  INIT
+    // =============================================
+    document.addEventListener('DOMContentLoaded', async function() {
+        await loadFromServer();
+        if (transactionsData.length === 0) {
+            seedDemoData();
+        }
+        setupRouter();
+        setupMobileNav();
+        setupModal();
+        navigate(window.location.hash || '#/');
+    });
+
+    // =============================================
+    //  ROUTER
+    // =============================================
+    function setupRouter() {
+        window.addEventListener('hashchange', function() { navigate(window.location.hash); });
+    }
+
+    function navigate(hash) {
+        const route = hash.replace('#', '') || '/';
+        const app = document.getElementById('app');
+
+        document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
+        destroyCharts();
+
+        if (route === '/' || route === '/dashboard') {
+            document.getElementById('nav-dashboard').classList.add('active');
+            app.innerHTML = renderDashboard();
+            initDashboard();
+        } else if (route === '/add') {
+            document.getElementById('nav-add').classList.add('active');
+            app.innerHTML = renderAddTransaction();
+            initAddTransaction();
+        } else if (route.startsWith('/edit/')) {
+            document.getElementById('nav-add').classList.add('active');
+            const id = route.replace('/edit/', '');
+            app.innerHTML = renderEditTransaction(id);
+            initEditTransaction(id);
+        } else if (route === '/transactions') {
+            document.getElementById('nav-transactions').classList.add('active');
+            app.innerHTML = renderTransactions();
+            initTransactions();
+        } else if (route === '/documents') {
+            document.getElementById('nav-documents').classList.add('active');
+            app.innerHTML = renderDocuments();
+            initDocuments();
+        } else if (route === '/workspaces') {
+            document.getElementById('nav-workspaces').classList.add('active');
+            app.innerHTML = renderWorkspaces();
+            initWorkspaces();
+        } else {
+            document.getElementById('nav-dashboard').classList.add('active');
+            app.innerHTML = renderDashboard();
+            initDashboard();
+        }
+
+        document.getElementById('navbar-links').classList.remove('open');
+        var pageEl = app.querySelector('.page');
+        if (pageEl) pageEl.classList.add('page-enter');
+    }
+
+    // =============================================
+    //  MOBILE NAV
+    // =============================================
+    function setupMobileNav() {
+        document.getElementById('mobile-toggle').addEventListener('click', function() {
+            document.getElementById('navbar-links').classList.toggle('open');
+        });
+    }
+
+    // =============================================
+    //  MODAL
+    // =============================================
+    function setupModal() {
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === e.currentTarget) closeModal();
+        });
+    }
+    function openModal(title, bodyHtml) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = bodyHtml;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.add('hidden');
+    }
+
+    // =============================================
+    //  TOAST
+    // =============================================
+    function showToast(message, type) {
+        type = type || 'success';
+        var container = document.getElementById('toast-container');
+        var icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        var toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.innerHTML = '<span>' + icon + '</span><span>' + message + '</span>';
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.style.animation = 'toastExit 0.3s ease forwards';
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 3000);
+    }
+
+    // =============================================
+    //  DESTROY CHARTS
+    // =============================================
+    function destroyCharts() {
+        Object.values(chartInstances).forEach(function(c) { if (c && typeof c.destroy === 'function') c.destroy(); });
+        chartInstances = {};
+    }
+
+    // =============================================
+    //  TRANSACTION ITEM
+    // =============================================
+    function renderTransactionItem(t, showActions) {
+        var cat = getCategoryById(t.category);
+        var doc = getDocumentByTransactionId(t.id);
+        var isPlanned = t.status === 'planned';
+        var styleAttr = isPlanned ? ' style="border-left: 3px dashed ' + (t.type === 'income' ? 'var(--income-color)' : 'var(--expense-color)') + '; opacity: 0.8;"' : '';
+        var html = '<div class="transaction-item" data-id="' + t.id + '"' + styleAttr + '>';
+        html += '<div class="transaction-icon ' + t.type + '">' + cat.icon + '</div>';
+        var titleText = (t.description || cat.name);
+        if (isPlanned) titleText = '<span style="font-size:10px; background:var(--bg-secondary); border:1px solid var(--border-default); padding:2px 4px; border-radius:4px; margin-right:6px">⏳ PLANLI</span>' + titleText;
+        html += '<div class="transaction-info"><div class="transaction-title">' + titleText + '</div>';
+        html += '<div class="transaction-category">' + cat.name + '</div></div>';
+        if (doc) html += '<div class="transaction-doc-indicator" title="Döküman ekli"></div>';
+        html += '<div class="transaction-meta"><div class="transaction-amount ' + t.type + '">' + (t.type === 'income' ? '+' : '-') + formatCurrency(parseFloat(t.amount)) + '</div>';
+        html += '<div class="transaction-date">' + formatDate(t.date) + '</div></div>';
+        if (showActions) {
+            html += '<div class="transaction-actions">';
+            html += '<button class="edit-btn" data-id="' + t.id + '" title="Düzenle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>';
+            html += '<button class="delete-btn" data-id="' + t.id + '" title="Sil"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>';
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // =============================================
+    //  DASHBOARD
+    // =============================================
+    function renderDashboard() {
+        var year = currentDate.getFullYear();
+        var month = currentDate.getMonth();
+        var totals = getMonthlyTotals(year, month);
+        var transactions = getTransactionsByMonth(year, month).filter(t => t.status !== 'planned').sort(function(a, b) { 
+            var diff = new Date(b.date) - new Date(a.date);
+            return diff === 0 && a.createdAt && b.createdAt ? new Date(b.createdAt) - new Date(a.createdAt) : diff;
+        });
+        var recent = transactions.slice(0, 6);
+
+        var plannedTxs = getTransactionsByMonth(year, month).filter(t => t.status === 'planned').sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+        var plannedHtml = '';
+        if (plannedTxs.length > 0) {
+            plannedHtml = '<div class="transaction-section" style="margin-top: 24px"><div class="section-header"><div class="section-title" style="color:var(--text-secondary)">⏳ Yaklaşan / Planlanan İşlemler</div></div>';
+            plannedHtml += plannedTxs.map(function(t) {
+                var cat = getCategoryById(t.category);
+                var isIncome = t.type === 'income';
+                return '<div class="transaction-item" style="border-left: 3px dashed ' + (isIncome ? 'var(--income-color)' : 'var(--expense-color)') + '; opacity: 0.8;">' +
+                    '<div class="tx-icon" style="background:var(--bg-secondary)">' + cat.icon + '</div>' +
+                    '<div class="tx-details">' +
+                        '<div class="tx-title">' + (t.description || cat.name) + '</div>' +
+                        '<div class="tx-meta">' + formatDate(t.date) + ' • ' + cat.name + '</div>' +
+                    '</div>' +
+                    '<div class="tx-amount ' + t.type + '"> ' + (isIncome ? '+' : '-') + formatCurrency(t.amount) + '</div>' +
+                    '<div class="tx-actions" style="margin-left: 16px; display:flex; gap: 8px;">' +
+                        '<button class="approve-btn btn btn-sm" data-id="'+t.id+'" style="padding: 4px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: var(--income-color); border: 1px solid var(--income-color);" title="Onayla (Hesaba Kat)">✅</button>' +
+                        '<button class="reject-btn btn btn-sm" data-id="'+t.id+'" style="padding: 4px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: var(--expense-color); border: 1px solid var(--expense-color)" title="İptal Et (Sil)">❌</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            plannedHtml += '</div>';
+        }
+
+        var prevMonth = month === 0 ? 11 : month - 1;
+        var prevYear = month === 0 ? year - 1 : year;
+        var prevTotals = getMonthlyTotals(prevYear, prevMonth);
+        var incomeChange = prevTotals.income > 0 ? ((totals.income - prevTotals.income) / prevTotals.income * 100).toFixed(1) : 0;
+        var expenseChange = prevTotals.expense > 0 ? ((totals.expense - prevTotals.expense) / prevTotals.expense * 100).toFixed(1) : 0;
+
+        var incomeChangeHtml = '';
+        if (incomeChange != 0) {
+            incomeChangeHtml = '<div class="summary-card-change ' + (incomeChange >= 0 ? 'up' : 'down') + '">' + (incomeChange >= 0 ? '↑' : '↓') + ' %' + Math.abs(incomeChange) + '</div>';
+        }
+        var expenseChangeHtml = '';
+        if (expenseChange != 0) {
+            expenseChangeHtml = '<div class="summary-card-change ' + (expenseChange <= 0 ? 'up' : 'down') + '">' + (expenseChange <= 0 ? '↓' : '↑') + ' %' + Math.abs(expenseChange) + '</div>';
+        }
+
+        var recentHtml = '';
+        if (recent.length > 0) {
+            recentHtml = recent.map(function(t) { return renderTransactionItem(t, false); }).join('');
+        } else {
+            recentHtml = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Bu ay henüz işlem yok</div><div class="empty-state-sub">Yeni işlem eklemek için "İşlem Ekle" sayfasını kullanın</div></div>';
+        }
+
+        return '<div class="page">' +
+            '<div class="page-header"><h1 class="page-title">Dashboard</h1><p class="page-subtitle">Finansal durumunuza genel bakış</p></div>' +
+            '<div class="month-selector">' +
+                '<button class="month-selector-btn" id="month-prev" aria-label="Önceki ay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
+                '<span class="month-selector-label" id="month-label">' + getMonthYear(currentDate) + '</span>' +
+                '<button class="month-selector-btn" id="month-next" aria-label="Sonraki ay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
+            '</div>' +
+            '<div class="summary-grid">' +
+                '<div class="card summary-card income"><div class="summary-card-icon">📈</div><div class="summary-card-label">Toplam Gelir</div><div class="summary-card-amount">' + formatCurrency(totals.income) + '</div>' + incomeChangeHtml + '</div>' +
+                '<div class="card summary-card expense"><div class="summary-card-icon">📉</div><div class="summary-card-label">Toplam Gider</div><div class="summary-card-amount">' + formatCurrency(totals.expense) + '</div>' + expenseChangeHtml + '</div>' +
+                '<div class="card summary-card balance"><div class="summary-card-icon">💎</div><div class="summary-card-label">Net Bakiye</div><div class="summary-card-amount">' + formatCurrency(totals.balance) + '</div></div>' +
+            '</div>' +
+            '<div class="charts-grid">' +
+                '<div class="card chart-card"><div class="chart-card-title">Gider Dağılımı</div><div class="chart-container"><canvas id="expense-chart"></canvas></div></div>' +
+                '<div class="card chart-card"><div class="chart-card-title">Yıllık Trend</div><div class="chart-container"><canvas id="trend-chart"></canvas></div></div>' +
+            '</div>' +
+            '<div class="transaction-section"><div class="section-header"><div class="section-title">Son İşlemler</div><a href="#/transactions" class="view-all-btn">Tümünü Gör →</a></div>' + recentHtml + '</div>' +
+            plannedHtml +
+        '</div>';
+    }
+
+    function initDashboard() {
+        document.getElementById('month-prev').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            navigate('#/');
+        });
+        document.getElementById('month-next').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            navigate('#/');
+        });
+
+        document.querySelectorAll('.approve-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                updateTransaction(this.dataset.id, { status: 'completed' });
+                showToast('İşlem gerçekleşti olarak işaretlendi!', 'success');
+                setTimeout(function() { navigate(window.location.hash || '#/'); }, 100);
+            });
+        });
+        document.querySelectorAll('.reject-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if(confirm('Bu planlanan işlemi silmek istediğinize emin misiniz?')) {
+                    deleteTransaction(this.dataset.id);
+                    showToast('İşlem iptal edildi', 'info');
+                    navigate(window.location.hash || '#/');
+                }
+            });
+        });
+
+        initExpenseChart();
+        initTrendChart();
+    }
+
+    function initExpenseChart() {
+        var canvas = document.getElementById('expense-chart');
+        if (!canvas) return;
+        var year = currentDate.getFullYear(), month = currentDate.getMonth();
+        var expenseData = getExpensesByCategory(year, month);
+        var labels = [], data = [];
+        var colors = ['#7c3aed','#06b6d4','#ef4444','#10b981','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#6366f1','#84cc16'];
+
+        Object.keys(expenseData).forEach(function(catId) {
+            var cat = getCategoryById(catId);
+            labels.push(cat.icon + ' ' + cat.name);
+            data.push(expenseData[catId]);
+        });
+
+        if (data.length === 0) {
+            canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:40px 0"><div class="empty-state-icon">📊</div><div class="empty-state-text">Gider verisi yok</div></div>';
+            return;
+        }
+
+        chartInstances.expense = new Chart(canvas, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.slice(0, data.length), borderWidth: 0, hoverOffset: 8 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#8b949e', font: { family: 'Inter', size: 12 }, padding: 12, usePointStyle: true, pointStyleWidth: 10 } },
+                    tooltip: { backgroundColor: '#161b22', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, cornerRadius: 8, padding: 12,
+                        callbacks: { label: function(ctx) { return ' ' + formatCurrency(ctx.raw); } } }
+                }
+            }
+        });
+    }
+
+    function initTrendChart() {
+        var canvas = document.getElementById('trend-chart');
+        if (!canvas) return;
+        var year = currentDate.getFullYear();
+        var trend = getMonthlyTrend(year);
+        var months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+
+        chartInstances.trend = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    { label: 'Gelir', data: trend.map(function(t){return t.income;}), backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 6, borderSkipped: false },
+                    { label: 'Gider', data: trend.map(function(t){return t.expense;}), backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 6, borderSkipped: false }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { family: 'Inter', size: 11 } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { family: 'Inter', size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000)+'K' : v; } } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#8b949e', font: { family: 'Inter', size: 12 }, usePointStyle: true, pointStyleWidth: 10, padding: 16 } },
+                    tooltip: { backgroundColor: '#161b22', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, cornerRadius: 8, padding: 12,
+                        callbacks: { label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + formatCurrency(ctx.raw); } } }
+                }
+            }
+        });
+    }
+
+    // =============================================
+    //  ADD TRANSACTION
+    // =============================================
+    function renderAddTransaction() {
+        var catOptions = INCOME_CATEGORIES.map(function(c) { return '<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>'; }).join('');
+        return '<div class="page">' +
+            '<div class="page-header"><h1 class="page-title">İşlem Ekle</h1><p class="page-subtitle">Yeni gelir veya gider kaydı oluşturun</p></div>' +
+            '<div class="form-container"><div class="card form-card">' +
+                '<div class="form-type-toggle">' +
+                    '<button class="form-type-btn active income-type" data-type="income" id="type-income">📈 Gelir</button>' +
+                    '<button class="form-type-btn expense-type" data-type="expense" id="type-expense">📉 Gider</button>' +
+                '</div>' +
+                '<form id="transaction-form">' +
+                    '<div class="form-group" style="display:flex; gap:16px; align-items:center; background: var(--bg-secondary); padding:12px; border-radius: var(--radius-md); margin-bottom:16px">' +
+                        '<label style="display:flex; align-items:center; gap:8px; cursor:pointer"><input type="radio" name="tx-status" value="completed" checked> ✅ Gerçekleşen (Mevcut)</label>' +
+                        '<label style="display:flex; align-items:center; gap:8px; cursor:pointer"><input type="radio" name="tx-status" value="planned"> ⏳ Planlanan (Beklenen)</label>' +
+                    '</div>' +
+                    '<div class="form-row">' +
+                        '<div class="form-group"><label class="form-label" for="tx-amount">Tutar (₺)</label><input type="number" id="tx-amount" class="form-input" placeholder="0.00" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label class="form-label" for="tx-date">Tarih</label><input type="date" id="tx-date" class="form-input" value="'+getTodayString()+'" required></div>' +
+                    '</div>' +
+                    '<div class="form-group"><label class="form-label" for="tx-category">Kategori</label><select id="tx-category" class="form-select" required>'+catOptions+'</select></div>' +
+                    '<div class="form-group"><label class="form-label" for="tx-description">Açıklama</label><textarea id="tx-description" class="form-textarea" placeholder="İşlem hakkında kısa açıklama..." rows="3"></textarea></div>' +
+                    '<div class="form-group"><label class="form-label">Fatura / Döküman (Opsiyonel)</label>' +
+                        '<div class="file-upload-area" id="file-upload-area"><input type="file" class="file-upload-input" id="file-input" accept="image/*,.pdf"><div class="file-upload-icon">📎</div><div class="file-upload-text">Dosya sürükleyin veya tıklayarak seçin</div><div class="file-upload-hint">PDF, JPG, PNG - Maks 5MB</div></div>' +
+                        '<div id="file-preview-container"></div>' +
+                    '</div>' +
+                    '<button type="submit" class="btn btn-primary btn-full" id="submit-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Kaydet</button>' +
+                '</form>' +
+            '</div></div>' +
+        '</div>';
+    }
+
+    function initAddTransaction() {
+        var currentType = 'income';
+        var uploadedFile = null;
+        var typeIncome = document.getElementById('type-income');
+        var typeExpense = document.getElementById('type-expense');
+        var categorySelect = document.getElementById('tx-category');
+        var form = document.getElementById('transaction-form');
+        var fileInput = document.getElementById('file-input');
+        var fileUploadArea = document.getElementById('file-upload-area');
+        var previewContainer = document.getElementById('file-preview-container');
+
+        function setType(type) {
+            currentType = type;
+            typeIncome.classList.toggle('active', type === 'income');
+            typeExpense.classList.toggle('active', type === 'expense');
+            var cats = getCategoriesByType(type);
+            categorySelect.innerHTML = cats.map(function(c) { return '<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>'; }).join('');
+        }
+
+        typeIncome.addEventListener('click', function() { setType('income'); });
+        typeExpense.addEventListener('click', function() { setType('expense'); });
+
+        fileUploadArea.addEventListener('dragover', function(e) { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
+        fileUploadArea.addEventListener('dragleave', function() { fileUploadArea.classList.remove('drag-over'); });
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault(); fileUploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file.size > 5 * 1024 * 1024) { showToast('Dosya boyutu 5MB\'dan büyük olamaz', 'error'); return; }
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedFile = { name: file.name, size: file.size, type: file.type, data: e.target.result };
+                showFilePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showFilePreview() {
+            if (!uploadedFile) { previewContainer.innerHTML = ''; return; }
+            var isImage = uploadedFile.type.startsWith('image/');
+            previewContainer.innerHTML = '<div class="file-preview"><div class="file-preview-icon">'+(isImage ? '🖼️' : '📄')+'</div><div class="file-preview-info"><div class="file-preview-name">'+uploadedFile.name+'</div><div class="file-preview-size">'+formatFileSize(uploadedFile.size)+'</div></div><button type="button" class="file-preview-remove" id="remove-file">&times;</button></div>';
+            document.getElementById('remove-file').addEventListener('click', function() {
+                uploadedFile = null; fileInput.value = ''; previewContainer.innerHTML = '';
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var amount = document.getElementById('tx-amount').value;
+            var date = document.getElementById('tx-date').value;
+            var category = document.getElementById('tx-category').value;
+            var description = document.getElementById('tx-description').value;
+            var statusRadio = document.querySelector('input[name="tx-status"]:checked');
+            var status = statusRadio ? statusRadio.value : 'completed';
+
+            if (!amount || parseFloat(amount) <= 0) { showToast('Lütfen geçerli bir tutar girin', 'error'); return; }
+
+            var tx = addTransaction({ type: currentType, amount: parseFloat(amount), date: date, category: category, description: description, status: status });
+
+            if (uploadedFile) {
+                addDocument({ transactionId: tx.id, fileName: uploadedFile.name, fileSize: uploadedFile.size, fileType: uploadedFile.type, fileData: uploadedFile.data });
+            }
+
+            showToast((currentType === 'income' ? 'Gelir' : 'Gider') + ' başarıyla kaydedildi!');
+            form.reset();
+            document.getElementById('tx-date').value = getTodayString();
+            uploadedFile = null;
+            previewContainer.innerHTML = '';
+            setType('income');
+        });
+    }
+
+    // =============================================
+    //  EDIT TRANSACTION
+    // =============================================
+    function renderEditTransaction(id) {
+        var t = getAllTransactions().find(function(tx) { return tx.id === id; });
+        if (!t) return '<div class="page"><div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">İşlem bulunamadı</div></div></div>';
+
+        var cats = getCategoriesByType(t.type);
+        var catOptions = cats.map(function(c) { return '<option value="'+c.id+'" '+(c.id===t.category?'selected':'')+'>'+c.icon+' '+c.name+'</option>'; }).join('');
+
+        return '<div class="page">' +
+            '<div class="page-header"><h1 class="page-title">İşlem Düzenle</h1><p class="page-subtitle">Mevcut işlemi güncelleyin</p></div>' +
+            '<div class="form-container"><div class="card form-card">' +
+                '<div class="form-type-toggle">' +
+                    '<button class="form-type-btn '+(t.type==='income'?'active':'')+' income-type" id="type-income">📈 Gelir</button>' +
+                    '<button class="form-type-btn '+(t.type==='expense'?'active':'')+' expense-type" id="type-expense">📉 Gider</button>' +
+                '</div>' +
+                '<form id="edit-form">' +
+                    '<div class="form-group" style="display:flex; gap:16px; align-items:center; background: var(--bg-secondary); padding:12px; border-radius: var(--radius-md); margin-bottom:16px">' +
+                        '<label style="display:flex; align-items:center; gap:8px; cursor:pointer"><input type="radio" name="tx-status" value="completed" '+(t.status !== 'planned' ? 'checked' : '')+'> ✅ Gerçekleşen</label>' +
+                        '<label style="display:flex; align-items:center; gap:8px; cursor:pointer"><input type="radio" name="tx-status" value="planned" '+(t.status === 'planned' ? 'checked' : '')+'> ⏳ Planlanan</label>' +
+                    '</div>' +
+                    '<div class="form-row">' +
+                        '<div class="form-group"><label class="form-label">Tutar (₺)</label><input type="number" id="tx-amount" class="form-input" value="'+t.amount+'" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label class="form-label">Tarih</label><input type="date" id="tx-date" class="form-input" value="'+t.date+'" required></div>' +
+                    '</div>' +
+                    '<div class="form-group"><label class="form-label">Kategori</label><select id="tx-category" class="form-select" required>'+catOptions+'</select></div>' +
+                    '<div class="form-group"><label class="form-label">Açıklama</label><textarea id="tx-description" class="form-textarea" rows="3">'+(t.description||'')+'</textarea></div>' +
+                    '<div style="display:flex;gap:12px"><button type="submit" class="btn btn-primary" style="flex:1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Güncelle</button><a href="#/transactions" class="btn btn-secondary" style="flex:0 0 auto">İptal</a></div>' +
+                '</form>' +
+            '</div></div>' +
+        '</div>';
+    }
+
+    function initEditTransaction(id) {
+        var t = getAllTransactions().find(function(tx) { return tx.id === id; });
+        if (!t) return;
+        var currentType = t.type;
+        var typeIncome = document.getElementById('type-income');
+        var typeExpense = document.getElementById('type-expense');
+        var categorySelect = document.getElementById('tx-category');
+        var form = document.getElementById('edit-form');
+
+        function setType(type) {
+            currentType = type;
+            typeIncome.classList.toggle('active', type === 'income');
+            typeExpense.classList.toggle('active', type === 'expense');
+            var cats = getCategoriesByType(type);
+            categorySelect.innerHTML = cats.map(function(c) { return '<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>'; }).join('');
+        }
+
+        typeIncome.addEventListener('click', function() { setType('income'); });
+        typeExpense.addEventListener('click', function() { setType('expense'); });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var statusRadio = document.querySelector('#edit-form input[name="tx-status"]:checked');
+            
+            updateTransaction(id, {
+                type: currentType,
+                amount: parseFloat(document.getElementById('tx-amount').value),
+                date: document.getElementById('tx-date').value,
+                category: document.getElementById('tx-category').value,
+                description: document.getElementById('tx-description').value,
+                status: statusRadio ? statusRadio.value : 'completed'
+            });
+            showToast('İşlem güncellendi!');
+            window.location.hash = '#/transactions';
+        });
+    }
+
+    // =============================================
+    //  TRANSACTIONS PAGE
+    // =============================================
+    function renderTransactions() {
+        var all = getAllTransactions();
+        var allCats = INCOME_CATEGORIES.concat(EXPENSE_CATEGORIES);
+        var catOptions = allCats.map(function(c) { return '<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>'; }).join('');
+
+        var listHtml = '';
+        if (all.length > 0) {
+            listHtml = all.sort(function(a, b) { 
+                var diff = new Date(b.date) - new Date(a.date);
+                return diff === 0 && a.createdAt && b.createdAt ? new Date(b.createdAt) - new Date(a.createdAt) : diff;
+            }).map(function(t) { return renderTransactionItem(t, true); }).join('');
+        } else {
+            listHtml = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Henüz işlem kaydı yok</div><div class="empty-state-sub">İlk işleminizi eklemek için <a href="#/add" style="color:var(--accent-cyan)">buraya tıklayın</a></div></div>';
+        }
+
+        return '<div class="page">' +
+            '<div class="page-header"><h1 class="page-title">İşlemler</h1><p class="page-subtitle">Tüm gelir ve gider kayıtlarınız</p></div>' +
+            '<div class="filter-bar">' +
+                '<div class="filter-group"><label class="filter-label">Tür:</label><select id="filter-type" class="filter-select"><option value="all">Tümü</option><option value="income">Gelir</option><option value="expense">Gider</option></select></div>' +
+                '<div class="filter-group"><label class="filter-label">Kategori:</label><select id="filter-category" class="filter-select"><option value="all">Tümü</option>'+catOptions+'</select></div>' +
+                '<div class="filter-group"><label class="filter-label">Başlangıç:</label><input type="date" id="filter-start" class="filter-input"></div>' +
+                '<div class="filter-group"><label class="filter-label">Bitiş:</label><input type="date" id="filter-end" class="filter-input"></div>' +
+            '</div>' +
+            '<div id="transactions-list">' + listHtml + '</div>' +
+        '</div>';
+    }
+
+    function initTransactions() {
+        var filterType = document.getElementById('filter-type');
+        var filterCategory = document.getElementById('filter-category');
+        var filterStart = document.getElementById('filter-start');
+        var filterEnd = document.getElementById('filter-end');
+        var listContainer = document.getElementById('transactions-list');
+
+        function applyFilters() {
+            var transactions = getAllTransactions();
+            if (filterType.value !== 'all') transactions = transactions.filter(function(t) { return t.type === filterType.value; });
+            if (filterCategory.value !== 'all') transactions = transactions.filter(function(t) { return t.category === filterCategory.value; });
+            if (filterStart.value) transactions = transactions.filter(function(t) { return t.date >= filterStart.value; });
+            if (filterEnd.value) transactions = transactions.filter(function(t) { return t.date <= filterEnd.value; });
+            transactions.sort(function(a, b) { 
+                var diff = new Date(b.date) - new Date(a.date);
+                return diff === 0 && a.createdAt && b.createdAt ? new Date(b.createdAt) - new Date(a.createdAt) : diff;
+            });
+
+            if (transactions.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Filtrelerle eşleşen işlem bulunamadı</div></div>';
+            } else {
+                listContainer.innerHTML = transactions.map(function(t) { return renderTransactionItem(t, true); }).join('');
+                attachTransactionActions();
+            }
+        }
+
+        function attachTransactionActions() {
+            listContainer.querySelectorAll('.edit-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) { e.stopPropagation(); window.location.hash = '#/edit/' + btn.dataset.id; });
+            });
+            listContainer.querySelectorAll('.delete-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
+                        deleteTransaction(btn.dataset.id);
+                        showToast('İşlem silindi', 'info');
+                        applyFilters();
+                    }
+                });
+            });
+        }
+
+        filterType.addEventListener('change', applyFilters);
+        filterCategory.addEventListener('change', applyFilters);
+        filterStart.addEventListener('change', applyFilters);
+        filterEnd.addEventListener('change', applyFilters);
+        attachTransactionActions();
+    }
+
+    // =============================================
+    //  DOCUMENTS PAGE
+    // =============================================
+    function renderDocuments() {
+        var documents = getAllDocuments();
+
+        if (documents.length === 0) {
+            return '<div class="page"><div class="page-header"><h1 class="page-title">Dökümanlar</h1><p class="page-subtitle">Yüklenen fatura ve belgeler</p></div><div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-text">Henüz döküman yüklenmemiş</div><div class="empty-state-sub">İşlem eklerken fatura/belge yükleyebilirsiniz</div></div></div>';
+        }
+
+        var cardsHtml = documents.map(function(doc) {
+            var isImage = doc.fileType && doc.fileType.startsWith('image/');
+            var tx = getAllTransactions().find(function(t) { return t.id === doc.transactionId; });
+            var cat = tx ? getCategoryById(tx.category) : null;
+            var previewHtml = isImage ? '<img src="'+doc.fileData+'" alt="'+doc.fileName+'">' : '📄';
+            var metaHtml = cat ? '<span>'+cat.icon+' '+cat.name+'</span>' : '<span></span>';
+            var amountHtml = tx ? '<span class="document-card-amount '+tx.type+'">'+formatCurrency(tx.amount)+'</span>' : '';
+
+            return '<div class="card document-card" data-doc-id="'+doc.id+'">' +
+                '<div class="document-card-preview">'+previewHtml+'</div>' +
+                '<div class="document-card-name">'+doc.fileName+'</div>' +
+                '<div class="document-card-meta">'+metaHtml+amountHtml+'</div>' +
+                '<div class="document-card-meta" style="margin-top:4px"><span>'+formatFileSize(doc.fileSize)+'</span><span>'+formatDate(doc.uploadedAt)+'</span></div>' +
+            '</div>';
+        }).join('');
+
+        return '<div class="page"><div class="page-header"><h1 class="page-title">Dökümanlar</h1><p class="page-subtitle">Yüklenen fatura ve belgeler</p></div><div class="documents-grid" id="documents-grid">'+cardsHtml+'</div></div>';
+    }
+
+    function initDocuments() {
+        document.querySelectorAll('.document-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var docId = card.dataset.docId;
+                var doc = getDocumentById(docId);
+                if (!doc) return;
+                var isImage = doc.fileType && doc.fileType.startsWith('image/');
+                var tx = getAllTransactions().find(function(t) { return t.id === doc.transactionId; });
+
+                var bodyHtml = '';
+                if (isImage) {
+                    bodyHtml = '<img src="'+doc.fileData+'" alt="'+doc.fileName+'" style="width:100%;margin-bottom:16px;">';
+                } else {
+                    bodyHtml = '<div style="text-align:center;padding:40px;font-size:64px;">📄</div>';
+                    bodyHtml += '<a href="'+doc.fileData+'" download="'+doc.fileName+'" class="btn btn-primary btn-full" style="margin-bottom:16px">📥 Dosyayı İndir</a>';
+                }
+
+                if (tx) {
+                    var cat = getCategoryById(tx.category);
+                    bodyHtml += '<div style="padding:16px;background:var(--bg-secondary);border-radius:var(--radius-md);border:1px solid var(--border-default)"><div style="font-weight:700;margin-bottom:8px">'+cat.icon+' '+(tx.description||cat.name)+'</div><div style="display:flex;justify-content:space-between;font-size:14px;color:var(--text-secondary)"><span>'+formatDate(tx.date)+'</span><span class="transaction-amount '+tx.type+'" style="font-weight:700">'+formatCurrency(tx.amount)+'</span></div></div>';
+                }
+
+                bodyHtml += '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-secondary btn-sm" style="flex:1" id="modal-close-btn">Kapat</button><button class="btn btn-sm" style="flex:0 0 auto;background:var(--expense-bg);color:var(--expense-color)" id="delete-doc-btn">🗑️ Sil</button></div>';
+
+                openModal(doc.fileName, bodyHtml);
+
+                document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+                document.getElementById('delete-doc-btn').addEventListener('click', function() {
+                    if (confirm('Bu dökümanı silmek istediğinize emin misiniz?')) {
+                        deleteDocument(doc.id);
+                        closeModal();
+                        showToast('Döküman silindi', 'info');
+                        navigate('#/documents');
+                    }
+                });
+            });
+        });
+    }
+    // =============================================
+    //  WORKSPACES PAGE
+    // =============================================
+    function renderWorkspaces() {
+        var activeWs = workspacesData.find(w => w.id === activeWorkspaceId) || workspacesData[0];
+        
+        var listHtml = workspacesData.map(w => {
+            var isActive = w.id === activeWorkspaceId;
+            return `
+                <div class="card" style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center; border: ${isActive ? '1px solid var(--accent-cyan)' : '1px solid var(--border-default)'}">
+                    <div>
+                        <div style="font-weight:600; font-size:16px;">💼 ${w.name} ${isActive ? '<span style="font-size:12px; color:var(--accent-cyan); margin-left:8px">(Aktif)</span>' : ''}</div>
+                        <div style="font-size:12px; color:var(--text-secondary)">Oluşturulma: ${formatDate(w.createdAt)}</div>
+                    </div>
+                    ${!isActive ? `<button class="btn btn-sm btn-secondary" onclick="setWorkspace('${w.id}')">Geçiş Yap</button>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        var currentYear = currentDate.getFullYear();
+
+        return `
+            <div class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Tablolar ve Ayarlar</h1>
+                    <p class="page-subtitle">Hesaplarınızı yönetin ve verilerinizi sıfırlayın</p>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:24px;">
+                    <!-- Sol Kolon: Tablolar -->
+                    <div>
+                        <div class="card">
+                            <h2 style="font-size:16px; margin-bottom:16px; border-bottom:1px solid var(--border-default); padding-bottom:8px">Mevcut Tablolar</h2>
+                            ${listHtml}
+                            
+                            <h2 style="font-size:16px; margin-top:24px; margin-bottom:16px; border-bottom:1px solid var(--border-default); padding-bottom:8px">Yeni Tablo Ekle</h2>
+                            <form id="new-workspace-form" style="display:flex; gap:8px">
+                                <input type="text" id="nw-name" class="form-input" style="flex:1" placeholder="Örn: Kişisel, 2026 Tatil Fonu" required>
+                                <button type="submit" class="btn btn-primary">Ekle</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sağ Kolon: Tehlikeli İşlemler -->
+                    <div>
+                        <div class="card" style="border: 1px solid var(--expense-color);">
+                            <h2 style="font-size:16px; margin-bottom:16px; color: var(--expense-color); border-bottom:1px solid var(--border-default); padding-bottom:8px">⚠️ Tehlikeli Alan</h2>
+                            <p style="font-size:14px; color:var(--text-secondary); margin-bottom:16px">
+                                <strong>${activeWs ? activeWs.name : ''}</strong> tablosundaki belirli bir ayın tüm verilerini kalıcı olarak silebilirsiniz. 
+                            </p>
+                            
+                            <div style="display:flex; gap:8px; margin-bottom:16px">
+                                <select id="reset-month" class="form-select" style="flex:1">
+                                    <option value="0">Ocak</option><option value="1">Şubat</option><option value="2">Mart</option>
+                                    <option value="3">Nisan</option><option value="4">Mayıs</option><option value="5">Haziran</option>
+                                    <option value="6">Temmuz</option><option value="7">Ağustos</option><option value="8">Eylül</option>
+                                    <option value="9">Ekim</option><option value="10">Kasım</option><option value="11">Aralık</option>
+                                </select>
+                                <input type="number" id="reset-year" class="form-input" style="flex:0 0 100px" value="${currentYear}">
+                            </div>
+                            
+                            <button id="reset-btn" class="btn btn-full" style="background:var(--expense-bg); color:var(--expense-color);">Seçili Ayı Sıfırla (Sil)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function initWorkspaces() {
+        document.getElementById('reset-month').value = currentDate.getMonth();
+
+        document.getElementById('new-workspace-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('nw-name').value;
+            const newWs = { id: generateId(), name: name, createdAt: new Date().toISOString() };
+            
+            try {
+                const res = await fetch('http://localhost:3000/api/workspaces', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newWs)
+                });
+                if (res.ok) {
+                    showToast('Yeni tablo oluşturuldu!', 'success');
+                    workspacesData.push(newWs);
+                    renderWorkspaceMenu();
+                    setWorkspace(newWs.id);
+                }
+            } catch(err) {
+                console.error(err);
+                showToast('Hata oluştu', 'error');
+            }
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', async function() {
+            var m = document.getElementById('reset-month').value;
+            var y = document.getElementById('reset-year').value;
+            var mName = document.getElementById('reset-month').options[m].text;
+
+            var activeWs = workspacesData.find(w => w.id === activeWorkspaceId);
+
+            if (confirm(`${activeWs.name} tablosunun ${mName} ${y} tarihindeki TÜM işlemlerini sildiğinizde bunu GERİ ALAMAZSINIZ! Onaylıyor musunuz?`)) {
+                try {
+                    const res = await fetch(`http://localhost:3000/api/transactions/reset/${activeWorkspaceId}/${y}/${m}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        showToast(`${data.deleted} adet işlem silindi.`, 'success');
+                        await loadFromServer();
+                        navigate('#/');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    showToast('Silme işlemi başarısız', 'error');
+                }
+            }
+        });
+    }
+    </script>
+</body>
+</html>
