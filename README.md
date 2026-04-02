@@ -1,57 +1,57 @@
-# 🐝 eBee - Akıllı Gelir & Gider Takip Sistemi
+# 🐝 eBee - Smart Income & Expense Tracker
 
-eBee, kişisel veya kurumsal finansal işlemlerinizi (gelir/gider) tek bir merkezden kolayca yönetmenizi sağlayan, çoklu çalışma alanına (workspace) sahip, modern ve hızlı bir web uygulamasıdır.
+eBee is a modern, fast, and feature-rich web application that allows you to easily manage your personal or corporate financial transactions (income/expenses) from a centralized dashboard. It supports multiple workspaces for isolated financial tracking.
 
 ![eBee Dashboard](https://via.placeholder.com/800x450?text=eBee+Dashboard)
 
-## 🌟 Öne Çıkan Özellikler
+## 🌟 Key Features
 
-- **Çoklu Tablo / Çalışma Alanı (Workspaces):** Hem kişisel harcamalarınızı hem de şirket bütçenizi birbirine karıştırmadan ayrı ayrı takip edin.
-- **Planlanan İşlemler:** Gelecekte gerçekleşecek ödemeleri / gelirleri "Planlanan" olarak girin. Bakiyenizi bozmadan listenizde görün, vakti gelince tek tuşla (✅) hesabınıza işleyin.
-- **Toplu Veri Yönetimi:** Hatalı girilen bir ayın tüm verilerini ayarlardan tek tıkla silebilirsiniz.
-- **Dinamik Grafik ve Bilanço:** Chart.js destekli, giderlerinizin kategorilerine göre dağılımını ve aylık genel trendi gösteren interaktif dashboard.
-- **Döküman & Fatura Ekleme:** Gelir veya giderlerinize makbuz, fiş ve döküman ekleyerek dijital bir arşiv oluşturun.
-- **Anlık ve Hızlı Veri İletişimi:** Node.js ve Express.js destekli backend, SQLite ile gömülü ve kalıcı bellek yönetimi sunar.
+- **Multi-Workspace System:** Track your personal expenses and company budget separately without mixing them up.
+- **Planned Transactions:** Enter future payments or expected income as "Planned". View them on your dashboard without affecting your current net balance. Click the (✅) button when the date arrives to process the transaction.
+- **Bulk Data Management:** Easily reset all transaction data for a specific month with a single click in the settings.
+- **Dynamic Charts & Balance:** Interactive dashboard powered by Chart.js, showing your expense distribution by category and overall monthly trends.
+- **Document & Invoice Attachments:** Upload receipts, invoices, or documents to your income/expense records to create a digital archive.
+- **Real-Time Data Processing:** Powered by Node.js and Express.js backend, providing embedded and persistent data management via SQLite.
 
-## 🛠️ Kullanılan Teknolojiler
+## 🛠️ Tech Stack
 
-- **Frontend:** HTML5, Vanilla JavaScript, Vanilla CSS (Modern CSS Değişkenleri, Flexbox, CSS Grid)
+- **Frontend:** HTML5, Vanilla JavaScript, Vanilla CSS (Modern CSS Variables, Flexbox, CSS Grid)
 - **Backend:** Node.js, Express.js
-- **Veritabanı:** SQLite (better-sqlite3)
-- **Veri Görselleştirme:** Chart.js
+- **Database:** SQLite (better-sqlite3)
+- **Data Visualization:** Chart.js
 
-## 🚀 Kurulum ve Çalıştırma
+## 🚀 Installation & Setup
 
-Projeyi bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyin:
+Follow these steps to run the project locally on your machine:
 
-### Ön Koşullar
-- Bilgisayarınızda [Node.js](https://nodejs.org/) kurulu olmalıdır.
+### Prerequisites
+- You must have [Node.js](https://nodejs.org/) installed on your computer.
 
-### Adımlar
+### Steps
 
-1. **Projeyi indirin ve klasöre girin:**
+1. **Clone the repository:**
    ```bash
-   git clone https://github.com/KULLANICI_ADINIZ/ebee.git
+   git clone https://github.com/iboturkyilmaz/ebee.git
    cd ebee
    ```
 
-2. **Gerekli kütüphaneleri kurun:**
+2. **Install the dependencies:**
    ```bash
    npm install
    ```
 
-3. **Sunucuyu başlatın:**
+3. **Start the server:**
    ```bash
    node server.js
    ```
 
-4. **Kullanmaya başlayın:**
-   Tarayıcınızı açın ve `http://localhost:3000` adresine gidin. Verileriniz uygulamanın kök dizininde otomatik olarak `ebee.db` adında bir dosyada güvenle oluşturulacak ve saklanacaktır.
+4. **Start tracking:**
+   Open your browser and navigate to `http://localhost:3000`. Your data will be automatically and securely stored in an `ebee.db` file within the root directory of the application.
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contributing
 
-Bu proje tamamen açık kaynaklıdır ve geliştirmeye açıktır. Pull Request göndererek projenin büyümesine katkıda bulunabilirsiniz.
+This project is completely open-source and open to contributions. Feel free to submit a Pull Request to help the project grow.
 
-## 📜 Lisans
+## 📜 License
 
-Bu proje MIT lisansı ile lisanslanmıştır.
+This project is licensed under the MIT License.
